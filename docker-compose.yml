@@ -37,6 +37,7 @@ services:
     depends_on:
       - storer
       - zipper-shared-tmp-container
+      - prometheus_pushgateway
       - zipper-server-coverage-container
     volumes_from:
       - zipper-shared-tmp-container:rw
@@ -63,6 +64,41 @@ services:
     environment:
       - CYBER_DOJO_KATAS_ROOT
 
+
+  prometheus_pushgateway:
+    image: prom/pushgateway
+    container_name: prometheus_pushgateway
+    ports:
+      - '9091:9091'
+
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+        - '-config.file=/etc/prometheus/prometheus.yml'
+    ports:
+        - '9090:9090'
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  zipper-shared-tmp-container:
+    image: cyberdojo/zipper
+    container_name: zipper-shared-tmp-container
+    volumes:
+      - /${CYBER_DOJO_ZIPPER_ROOT}
+    command: "chown zipper:zipper ${CYBER_DOJO_ZIPPER_ROOT}"
+
+
+  storer-data-container:
+    image: cyberdojo/storer
+    container_name: storer-data-container
+    volumes:
+      - ./server/katas:${CYBER_DOJO_KATAS_ROOT}:ro
+
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   zipper-client-coverage-container:
@@ -80,17 +116,3 @@ services:
       - /${CYBER_DOJO_COVERAGE_ROOT}
     command: "chown zipper:zipper ${CYBER_DOJO_COVERAGE_ROOT}"
 
-
-  zipper-shared-tmp-container:
-    image: cyberdojo/zipper
-    container_name: zipper-shared-tmp-container
-    volumes:
-      - /${CYBER_DOJO_ZIPPER_ROOT}
-    command: "chown zipper:zipper ${CYBER_DOJO_ZIPPER_ROOT}"
-
-
-  storer-data-container:
-    image: cyberdojo/storer
-    container_name: storer-data-container
-    volumes:
-      - ./server/katas:${CYBER_DOJO_KATAS_ROOT}:ro
